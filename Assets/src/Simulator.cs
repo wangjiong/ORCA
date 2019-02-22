@@ -783,6 +783,10 @@ namespace RVO
             agents_[agentNo].radius_ = radius;
         }
 
+        public void setAgentMass(int agentNo, float mass_) {
+            agents_[agentNo].mass_ = mass_;
+        }
+
         /**
          * <summary>Sets the time horizon of a specified agent with respect to
          * other agents.</summary>
