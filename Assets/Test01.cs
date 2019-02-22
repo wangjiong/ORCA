@@ -56,7 +56,7 @@ public class Test01 : MonoBehaviour {
                 // orca
                 RVO.Vector2 p = new RVO.Vector2(i * space + position.x, j * space + position.z);
                 int index = Simulator.Instance.addAgent(p);
-                Simulator.Instance.setAgentMass(index, mass);
+                //Simulator.Instance.setAgentMass(index, mass);
                 // 目标点
                 goals.Add(p);
                 // 物体
@@ -73,7 +73,7 @@ public class Test01 : MonoBehaviour {
         // orca
         RVO.Vector2 p = new RVO.Vector2(position.x, position.z);
         int index = Simulator.Instance.addAgent(p);
-        Simulator.Instance.setAgentMass(index, 20.0f);
+        //Simulator.Instance.setAgentMass(index, 20.0f);
         // 目标点
         goals.Add(p);
         // 物体
