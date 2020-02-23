@@ -11,11 +11,11 @@ public class Test01 : MonoBehaviour {
     IList<RVO.Vector2> goals;
     System.Random random;
 
-    float speed = 5.0f;
+    float speed = 3f;
 
     public static List<Sphere> mSphereScritps = new List<Sphere>();
 
-    float space = 2.2f;
+    float space = 1.1f;
 
     int N = 20;
 
@@ -42,10 +42,10 @@ public class Test01 : MonoBehaviour {
 
         // 创建小球
         Simulator.Instance.setAgentDefaults(10.0f, 10, 1f, 1.0f, 0.5f, speed, new RVO.Vector2(0.0f, 0.0f));
-        CreateSquad(new Vector3(-30, 0, 0) , mSpherePrefab01 , 1);
-        CreateSquad(new Vector3(30, 0, 0) , mSpherePrefab02 , 1);
+        CreateSquad(new Vector3(-30, 0, 0) , mSpherePrefab01 , 1f);
+        CreateSquad(new Vector3(30, 0, 0) , mSpherePrefab02 , 1f);
         // 创建大球
-        CreateGameObject(new Vector3(0, 0, 50), mSpherePrefab02 , 5);
+        CreateGameObject(new Vector3(0, 0, 50), mSpherePrefab02 , 2F);
        
     }
 
@@ -62,6 +62,7 @@ public class Test01 : MonoBehaviour {
                 // 物体
                 GameObject g = GameObject.Instantiate(spherePrefab);
                 mSpheres.Add(g);
+                g.transform.localScale = g.transform.localScale * 0.5f;
                 mSphereScritps.Add(g.AddComponent<Sphere>());
             }
         }
@@ -73,7 +74,7 @@ public class Test01 : MonoBehaviour {
         // orca
         RVO.Vector2 p = new RVO.Vector2(position.x, position.z);
         int index = Simulator.Instance.addAgent(p);
-        Simulator.Instance.setAgentMass(index, 20.0f);
+        Simulator.Instance.setAgentMass(index, 1.1f);
         // 目标点
         goals.Add(p);
         // 物体

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Agent.cs
  * RVO2 Library C#
  *
@@ -314,15 +314,13 @@ namespace RVO {
 
                 Agent other = agentNeighbors_[i].Value;
 
-                //if (mass_ > other.mass_) {
-                //    continue;
-                //}
-
                 Vector2 relativePosition = other.position_ - position_;
 
                 // mass
                 float massRatio = (other.mass_ / (mass_ + other.mass_));
                 float neighborMassRatio = (mass_ / (mass_ + other.mass_));
+                //massRatio = 0.5f;
+                //neighborMassRatio = 0.5f;
                 Vector2 velocityOpt = (massRatio >= 0.5f ? (velocity_ - massRatio * velocity_) * 2 : prefVelocity_ + (velocity_ - prefVelocity_) * massRatio * 2);
                 Vector2 neighborVelocityOpt = (neighborMassRatio >= 0.5f ? 2 * other.velocity_ * (1 - neighborMassRatio) : other.prefVelocity_ + (other.velocity_ - other.prefVelocity_) * neighborMassRatio * 2); ;
 
@@ -333,6 +331,9 @@ namespace RVO {
                 Vector2 relativeVelocity = velocityOpt - neighborVelocityOpt;
                 float distSq = RVOMath.absSq(relativePosition);
                 float combinedRadius = radius_ + other.radius_;
+                if (mass_ != other.mass_) {
+                    //combinedRadius = combinedRadius * 0.45f;
+                }
                 float combinedRadiusSq = RVOMath.sqr(combinedRadius);
 
                 Line line;
@@ -391,9 +392,18 @@ namespace RVO {
                 ////////////////////////////////////////////////////////////////////////////////////////////////
             }
 
+            if (mass_ != 1) {
+                int i = 1;
+            }
+
             int lineFail = linearProgram2(orcaLines_, maxSpeed_, prefVelocity_, msDirectionOpt, ref newVelocity_);
 
             if (lineFail < orcaLines_.Count) {
+
+                if (mass_ != 1) {
+                    int i = 1;
+                }
+
                 linearProgram3(orcaLines_, numObstLines, lineFail, maxSpeed_, ref newVelocity_);
             }
         }
@@ -567,17 +577,21 @@ namespace RVO {
          * </param>
          */
         private int linearProgram2(IList<Line> lines, float radius, Vector2 optVelocity, bool directionOpt, ref Vector2 result) {
+            // directionOpt 第一次为false，第二次为true，directionOpt主要用在 linearProgram1 里面
             if (directionOpt) {
                 /*
                  * Optimize direction. Note that the optimization velocity is of
                  * unit length in this case.
                  */
+                // 1.这个其实没什么用，只是因为velocity是归一化的所以直接乘 radius
                 result = optVelocity * radius;
             } else if (RVOMath.absSq(optVelocity) > RVOMath.sqr(radius)) {
                 /* Optimize closest point and outside circle. */
+                // 2.当 optVelocity 太大时，先归一化optVelocity，再乘 radius
                 result = RVOMath.normalize(optVelocity) * radius;
             } else {
                 /* Optimize closest point and inside circle. */
+                // 3.当 optVelocity 小于maxSpeed时
                 result = optVelocity;
             }
 
@@ -609,16 +623,23 @@ namespace RVO {
          * </param>
          */
         private void linearProgram3(IList<Line> lines, int numObstLines, int beginLine, float radius, ref Vector2 result) {
-            float distance = 0.0f;
 
+            if (mass_ != 1) {
+                Debug.Log("linearProgram3 beginLine:"+ beginLine);
+            }
+
+            float distance = 0.0f;
+            // 遍历所有剩余ORCA线
             for (int i = beginLine; i < lines.Count; ++i) {
+                // 每一条 ORCA 线都需要精确的做出处理，distance 为 最大违规的速度
                 if (RVOMath.det(lines[i].direction, lines[i].point - result) > distance) {
                     /* Result does not satisfy constraint of line i. */
                     IList<Line> projLines = new List<Line>();
+                    // 1.静态阻挡的orca线直接加到projLines中
                     for (int ii = 0; ii < numObstLines; ++ii) {
                         projLines.Add(lines[ii]);
                     }
-
+                    // 2.动态阻挡的orca线需要重新计算line，从第一个非静态阻挡到当前的orca线
                     for (int j = numObstLines; j < i; ++j) {
                         Line line;
 
@@ -628,20 +649,24 @@ namespace RVO {
                             /* Line i and line j are parallel. */
                             if (lines[i].direction * lines[j].direction > 0.0f) {
                                 /* Line i and line j point in the same direction. */
+                                // 2-1 两条线平行且同向
                                 continue;
                             } else {
                                 /* Line i and line j point in opposite direction. */
+                                // 2-2 两条线平行且反向
                                 line.point = 0.5f * (lines[i].point + lines[j].point);
                             }
                         } else {
+                            // 2-3 两条线不平行
                             line.point = lines[i].point + (RVOMath.det(lines[j].direction, lines[i].point - lines[j].point) / determinant) * lines[i].direction;
                         }
-
+                        // 计算ORCA线的方向
                         line.direction = RVOMath.normalize(lines[j].direction - lines[i].direction);
                         projLines.Add(line);
                     }
-
+                    // 3.再次计算最优速度
                     Vector2 tempResult = result;
+                    // 注意这里的 new Vector2(-lines[i].direction.y(), lines[i].direction.x()) 是方向向量
                     if (linearProgram2(projLines, radius, new Vector2(-lines[i].direction.y(), lines[i].direction.x()), true, ref result) < projLines.Count) {
                         /*
                          * This should in principle not happen. The result is by
